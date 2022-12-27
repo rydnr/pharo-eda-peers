@@ -31,16 +31,16 @@ BaselineOfPharoEDAPeers class >> declarePackagesIn: spec [
 
 	spec
 		package: #'EDAPE-Domain'
-		with: [ spec requires: #( 'PharoEDACommon' ) ];
+		with: [ spec requires: #( 'PharoEDA' ) ];
 		package: #'EDAPE-Domain-Tests'
 		with: [ spec requires: #( 'EDAPE-Domain' ) ]
 ]
 
 { #category : #dependencies }
-BaselineOfPharoEDAPeers class >> includePharoEDACommon: spec [
+BaselineOfPharoEDAPeers class >> includePharoEDA: spec [
        spec
-               baseline: 'PharoEDACommon'
-               with: [ spec repository: 'github://rydnr/pharo-eda-common:main' ].
+               baseline: 'PharoEDA'
+               with: [ spec repository: 'github://rydnr/pharo-eda:main' ].
        ^ spec
 ]
 
@@ -51,7 +51,7 @@ BaselineOfPharoEDAPeers >> baseline: spec [
 	spec for: #common do: [ 
 		spec blessing: #baseline.
 		spec postLoadDoIt: #postload:package:.
-		self class includePharoEDACommon: spec;
+		self class includePharoEDA: spec;
 		 declarePackagesIn: spec;
 		 declareGroupsIn: spec ]
 ]
@@ -62,7 +62,7 @@ BaselineOfPharoEDAPeers >> postload: loader package: packageSpec [
 	| location |
 	location := (IceRepository registry detect: [ :each | 
 		             each name = 'pharo-eda-peers' ]) location.
-	"EDACIconProvider addDefaultLocation: location / 'resources' / 'icons'.
+	EDACIconProvider addDefaultLocation: location / 'resources' / 'icons'.
 	EDACTranslationProvider addDefaultLocation:
-		location / 'resources' / 'l10n'"
+		location / 'resources' / 'l10n'
 ]
