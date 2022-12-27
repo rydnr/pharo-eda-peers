@@ -7,7 +7,7 @@ Class {
 	#classVars : [
 		'Himself'
 	],
-	#category : #'EDAPE-Domain'
+	#category : #'EDAPE-Domain-People'
 }
 
 { #category : #singleton }

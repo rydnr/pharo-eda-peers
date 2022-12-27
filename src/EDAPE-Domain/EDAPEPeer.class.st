@@ -8,5 +8,5 @@ My collaborators are other peers.
 Class {
 	#name : #EDAPEPeer,
 	#superclass : #Object,
-	#category : #'EDAPE-Domain'
+	#category : #'EDAPE-Domain-Base'
 }
