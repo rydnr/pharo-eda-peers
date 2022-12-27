@@ -40,7 +40,7 @@ BaselineOfPharoEDAPeers class >> declarePackagesIn: spec [
 BaselineOfPharoEDAPeers class >> includePharoEDA: spec [
        spec
                baseline: 'PharoEDA'
-               with: [ spec repository: 'github://rydnr/pharo-eda:main' ].
+               with: [ spec repository: 'github://rydnr/pharo-eda:settings' ].
        ^ spec
 ]
 
