@@ -19,12 +19,11 @@ Class {
 
 { #category : #meta }
 BaselineOfPharoEDAPeers class >> declareGroupsIn: spec [
+
 	spec
-		group: 'core'
-			with:
-			#(#'EDAA-Domain' #'EDAA-EventStore-InMemory' #'EDAA-EventStore-Voyage' #'EDAA-Messaging-Stomp' #'EDAA-Projections-Voyage' #'EDAA-SMTP');
-		group: 'tests' with: #(#'EDAA-Domain-Tests');
-		group: 'default' with: #('core' 'tests')
+		group: 'core' with: #( #'EDAPE-Domain' );
+		group: 'tests' with: #( #'EDAPE-Domain-Tests' );
+		group: 'default' with: #( 'core' 'tests' )
 ]
 
 { #category : #meta }
