@@ -1,33 +1,27 @@
-# PharoEDA Adapters
+# PharoEDA Peers
 
-This project discovers and provides adapters for PharoEDA applications's ports.
+This project discovers and provides peers within the context of PharoEDA applications.
 
 ## Motivation
 
-PharoEDA applications use ports and adapters, so they are decoupled from the actual technologies used.
-This project provides adapters to choose from when launching `EDAApplication` instances.
+PharoEDA applications are meant to focus exclusively on their domain. However, their domain should only include conversations, entities talking to other entities, in the same abstraction level.
+
+A Peer is similar to a Port, but it's not a technological abstraction: it represents an entity able to perform certain task.
+Such task might be automated or not.
 
 ## Design
-
-PharoEDA-Adapters will inspect its environment and try to build functioning adapters. Once an adapter is properly built, it'll emit an event. PharoEDA has built-in support for consuming and projecting those events.
 
 ## Usage
 
 First, load it with Metacello:
 
 ```smalltalk
-Metacello new repository: 'github://rydnr/pharo-eda-adapters:main'; baseline: #PharoEDAAdapters; load
-```
-
-Then, run it with
-
-```smalltalk
-PharoEDAAdapters run
+Metacello new repository: 'github://rydnr/pharo-eda-peers:main'; baseline: #PharoEDAPeers; load
 ```
 
 ## Work in progress
 
-- Support for current PharoEDA adapters: MongoDB, STOMP.
+- Initial design
 
 ## Credits
 

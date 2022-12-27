@@ -26,25 +26,25 @@ task retrieveFreshGtoolkitImage(type: RetrieveFreshGtoolkitImageTask, dependsOn:
   gtHome = gtoolkitHome
 }
 
-task loadPharoEDAAdapters(type: EvalSmalltalkExpressionTask, dependsOn: downloadFreshPharoImage) {
+task loadPharoEDAPeers(type: EvalSmalltalkExpressionTask, dependsOn: downloadFreshPharoImage) {
     pharoPath = customPharoPath
     commonPharoArgs = customPharoArgs
-    expression = "Metacello new repository: 'github://rydnr/pharo-eda-adapters:${branchOrTag}'; baseline: 'PharoEDAAdapters'; onConflictUseLoaded; load"
+    expression = "Metacello new repository: 'github://rydnr/pharo-eda-peers:${branchOrTag}'; baseline: 'PharoEDAPeers'; onConflictUseLoaded; load"
 }
 
-task loadPharoEDAAdaptersGt(type: EvalSmalltalkExpressionTask, dependsOn: retrieveFreshGtoolkitImage) {
+task loadPharoEDAPeersGt(type: EvalSmalltalkExpressionTask, dependsOn: retrieveFreshGtoolkitImage) {
     pharoPath = customPharoPath
     commonPharoArgs = customPharoArgs
-    expression = "Metacello new repository: 'github://rydnr/pharo-eda-adapters:${branchOrTag}'; baseline: 'PharoEDAAdapters'; onConflictUseLoaded; load"
+    expression = "Metacello new repository: 'github://rydnr/pharo-eda-peers:${branchOrTag}'; baseline: 'PharoEDAPeers'; onConflictUseLoaded; load"
 }
 
-task customizeImage(type: RunSmalltalkScriptTask, dependsOn: loadPharoEDAAdapters) {
+task customizeImage(type: RunSmalltalkScriptTask, dependsOn: loadPharoEDAPeers) {
     script = "customize.st"
     pharoPath = customPharoPath
     commonPharoArgs = customPharoArgs
 }
 
-task customizeImageGt(type: RunSmalltalkScriptTask, dependsOn: loadPharoEDAAdaptersGt) {
+task customizeImageGt(type: RunSmalltalkScriptTask, dependsOn: loadPharoEDAPeersGt) {
     script = "customize.st"
     pharoPath = customPharoPath
     commonPharoArgs = customPharoArgs
