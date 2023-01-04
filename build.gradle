@@ -37,7 +37,7 @@ task loadPharoEDAPeers(type: EvalSmalltalkExpressionTask, dependsOn: downloadFre
 EpMonitor current disable.
 NonInteractiveTranscript stdout install.
 [ Metacello new
-  repository: 'github://rydnr/pharo-eda-peers:${branchOrTag}';
+  repository: 'github://rydnr/pharo-eda-peers:${branchOrTag}/src';
   baseline: 'PharoEDAPeers';
   onConflictUseLoaded;
   load
@@ -47,20 +47,10 @@ NonInteractiveTranscript stdout install.
 }
 
 task loadPharoEDAPeersGt(type: EvalSmalltalkExpressionTask, dependsOn: retrieveFreshGtoolkitImage) {
-    image = "${project.projectDir}/GlamorousToolkit.image"
-    pharoPath = "${project.projectDir}/bin/GlamorousToolkit-cli"
+    image = "GlamorousToolkit.image"
+    pharoPath = "bin/GlamorousToolkit-cli"
     commonPharoArgs = ""
-    expression = """
-EpMonitor current disable.
-NonInteractiveTranscript stdout install.
-[ Metacello new
-  baseline: 'PharoEDAPeers';
-  repository: 'github://rydnr/pharo-eda-peers:${branchOrTag}/src';
-  onConflictUseLoaded;
-  load  ] ensure: [
-  	EpMonitor current enable.
-  	GtTranscript installDefault ]
-"""
+    expression = "EpMonitor current disable. NonInteractiveTranscript stdout install. [ Metacello new baseline: 'PharoEDAPeers'; repository: 'github://rydnr/pharo-eda-peers:${branchOrTag}/src'; onConflictUseLoaded; load ] ensure: [ EpMonitor current enable. GtTranscript installDefault ]"
 }
 
 task customizeImage(type: RunSmalltalkScriptTask, dependsOn: loadPharoEDAPeers) {
@@ -83,7 +73,7 @@ task assemble(type: SavePharoImageTask, dependsOn: customizeImage) {
 }
 
 task assembleGt(type: SaveGtoolkitImageTask, dependsOn: customizeImageGt) {
-    toImageName = imageName
+    toImageName = "gt-${imageName}"
     shouldDeleteOldImage = false
     commonGtArgs = customGtArgs
 }
@@ -227,13 +217,8 @@ class EvalSmalltalkExpressionTask extends DefaultTask {
 
     @TaskAction
     def evalSmalltalkExpression() {
-        def pharoArgs = []
-        pharoArgs.addAll(commonPharoArgs)
-        pharoArgs.addAll([image, "eval", "--save", expression])
-        println "${pharoPath} ${commonPharoArgs} ${image} eval --save ${expression}"
         project.exec {
-            executable "${pharoPath}"
-            args pharoArgs
+            commandLine "bash", "-c", "${pharoPath} ${image} eval --save \"${expression}\""
         }
     }
 }
