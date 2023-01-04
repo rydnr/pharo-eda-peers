@@ -17,7 +17,6 @@ def tag = properties.getProperty('tag')
 def branchOrTag = properties.getProperty('branchOrTag')
 def versionSuffix = properties.getProperty('versionSuffix')
 def version = "${branchOrTag}${versionSuffix}" // do not forget to update the version also in docker.gradle
-def gtoolkitVersion = properties.getProperty('gtoolkitVersion')
 
 def imageName = "${project.name}-${project.version}"
 
@@ -64,6 +63,14 @@ task assemble(type: SavePharoImageTask, dependsOn: customizeImage) {
 task assembleGt(type: SaveGtoolkitImageTask, dependsOn: customizeImageGt) {
     toImageName = "gt-${imageName}"
     shouldDeleteOldImage = false
+}
+
+task runUi(type: RunPharoUiTask, dependsOn: assemble) {
+    image = imageName
+}
+
+task runGt(type: RunGtTask, dependsOn: assembleGt) {
+    gtImage = "gt-${imageName}"
 }
 
 task clean(type: Delete) {
@@ -158,21 +165,18 @@ class SavePharoImageTask extends DefaultTask {
 class SaveGtoolkitImageTask extends DefaultTask {
     @Input String fromImageName = "GlamorousToolkit.image"
     @Input String gtPath = "bin/GlamorousToolkit-cli"
-    @Input def commonGtArgs
     @Input String toImageName
     @Input boolean shouldDeleteOldImage
 
     @TaskAction
     def renameGtoolkitImage() {
-        def gtArgs = []
-        gtArgs.addAll(commonGtArgs)
-        gtArgs.addAll([fromImageName, "save", toImageName])
-        if (shouldDeleteOldImage) {
-            gtArgs << "--delete-old"
-        }
         project.exec {
-            executable "${gtPath}"
-            args gtArgs
+            commandLine "bash", "-c", "${gtPath} ${fromImageName} save ${toImageName}"
+        }
+        if (shouldDeleteOldImage) {
+            project.exec {
+                commandLine "bash", "-c", "rm -f ${fromImageName}"
+            }
         }
     }
 }
@@ -256,6 +260,30 @@ class RunGtScriptTask extends DefaultTask {
     def runSmalltalkScript() {
         project.exec {
             commandLine "bash", "-c", "${gtPath} ${gtImage} st --quit --save \"${script}\""
+        }
+    }
+}
+
+class RunPharoUiTask extends DefaultTask {
+    @Input String image = "Pharo.image"
+    @Input String pharoUiPath = "pharo-ui"
+
+    @TaskAction
+    def runUi() {
+        project.exec {
+            commandLine "bash", "-c", "${pharoUiPath} ${image}"
+        }
+    }
+}
+
+class RunGtTask extends DefaultTask {
+    @Input String gtImage = "GlamorousToolkit.image"
+    @Input String gtPath = "bin/GlamorousToolkit"
+
+    @TaskAction
+    def runUi() {
+        project.exec {
+            commandLine "bash", "-c", "${gtPath} --image ${gtImage}.image"
         }
     }
 }
