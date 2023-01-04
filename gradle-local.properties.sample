@@ -2,4 +2,5 @@ pharoPath=/opt/pharo/pharo-vm/pharo
 pharoUiPath=/opt/pharo/pharo-vm/pharo-ui
 pharoArgs=--headless
 gtoolkitHome=/home/pharo
+gtoolkitArgs=
 # vim: syntax=sh ts=2 sw=2 sts=4 sr noet
