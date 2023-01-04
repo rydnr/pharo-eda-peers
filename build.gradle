@@ -1,23 +1,25 @@
-def tag = 'main'
-def branchOrTag = 'main'
-def version = "${tag}-SNAPSHOT" // do not forget to update the version also in docker.gradle
-def gtoolkitVersion = "0.8.2325"
-
 apply plugin: PharoPlugin
 
 pharo {
     imageVersion = '100'
 }
 
-def imageName = "${project.name}-${project.version}"
-
 def Properties properties = new Properties()
 properties.load(project.rootProject.file('gradle-local.properties').newDataInputStream())
+properties.load(project.rootProject.file('project.properties').newDataInputStream())
 def customPharoPath = properties.getProperty('pharoPath')
 def customPharoUiPath = properties.getProperty('pharoUiPath')
 def customPharoArgs = properties.getProperty('pharoArgs').split(",").toList()
 def gtoolkitHome = properties.getProperty('gtoolkitHome')
-def customGtArgs = properties.getProperty('gtoolkitArgs').split(",").toList()
+def customGtPath = properties.getProperty('gtoolkitPath')
+def gtoolkitVersion = properties.getProperty('gtoolkitVersion')
+def tag = properties.getProperty('tag')
+def branchOrTag = properties.getProperty('branchOrTag')
+def versionSuffix = properties.getProperty('versionSuffix')
+def version = "${branchOrTag}${versionSuffix}" // do not forget to update the version also in docker.gradle
+def gtoolkitVersion = properties.getProperty('gtoolkitVersion')
+
+def imageName = "${project.name}-${project.version}"
 
 task removePreviousPharoImage(type: RemovePreviousPharoImageTask)
 
@@ -30,39 +32,26 @@ task retrieveFreshGtoolkitImage(type: RetrieveFreshGtoolkitImageTask, dependsOn:
     gtVersion = gtoolkitVersion
 }
 
-task loadPharoEDAPeers(type: EvalSmalltalkExpressionTask, dependsOn: downloadFreshPharoImage) {
+task loadPharoEDAPeers(type: EvalPharoExpressionTask, dependsOn: downloadFreshPharoImage) {
     pharoPath = customPharoPath
     commonPharoArgs = customPharoArgs
-    expression = """
-EpMonitor current disable.
-NonInteractiveTranscript stdout install.
-[ Metacello new
-  repository: 'github://rydnr/pharo-eda-peers:${branchOrTag}/src';
-  baseline: 'PharoEDAPeers';
-  onConflictUseLoaded;
-  load
-  ] ensure: [
-  	EpMonitor current enable ]
-"""
+    expression = "EpMonitor current disable. NonInteractiveTranscript stdout install. [ Metacello new repository: 'github://rydnr/pharo-eda-peers:${branchOrTag}/src'; baseline: 'PharoEDAPeers'; onConflictUseLoaded; load ] ensure: [ EpMonitor current enable ]"
 }
 
-task loadPharoEDAPeersGt(type: EvalSmalltalkExpressionTask, dependsOn: retrieveFreshGtoolkitImage) {
-    image = "GlamorousToolkit.image"
-    pharoPath = "bin/GlamorousToolkit-cli"
-    commonPharoArgs = ""
+task loadPharoEDAPeersGt(type: EvalGtExpressionTask, dependsOn: retrieveFreshGtoolkitImage) {
+    gtPath = customGtPath
     expression = "EpMonitor current disable. NonInteractiveTranscript stdout install. [ Metacello new baseline: 'PharoEDAPeers'; repository: 'github://rydnr/pharo-eda-peers:${branchOrTag}/src'; onConflictUseLoaded; load ] ensure: [ EpMonitor current enable. GtTranscript installDefault ]"
 }
 
-task customizeImage(type: RunSmalltalkScriptTask, dependsOn: loadPharoEDAPeers) {
+task customizeImage(type: RunPharoScriptTask, dependsOn: loadPharoEDAPeers) {
     script = "customize.st"
     pharoPath = customPharoPath
     commonPharoArgs = customPharoArgs
 }
 
-task customizeImageGt(type: RunSmalltalkScriptTask, dependsOn: loadPharoEDAPeersGt) {
-    script = "customize.st"
-    pharoPath = "bin/GlamorousToolkit-cli"
-    commonPharoArgs = customGtArgs
+task customizeImageGt(type: RunGtScriptTask, dependsOn: loadPharoEDAPeersGt) {
+    script = "customizeGt.st"
+    gtPath = customGtPath
 }
 
 task assemble(type: SavePharoImageTask, dependsOn: customizeImage) {
@@ -75,7 +64,6 @@ task assemble(type: SavePharoImageTask, dependsOn: customizeImage) {
 task assembleGt(type: SaveGtoolkitImageTask, dependsOn: customizeImageGt) {
     toImageName = "gt-${imageName}"
     shouldDeleteOldImage = false
-    commonGtArgs = customGtArgs
 }
 
 task clean(type: Delete) {
@@ -209,7 +197,7 @@ class LoadMetacelloConfigTask extends DefaultTask {
     }
 }
 
-class EvalSmalltalkExpressionTask extends DefaultTask {
+class EvalPharoExpressionTask extends DefaultTask {
     @Input String image = "Pharo.image"
     @Input String pharoPath = "pharo"
     @Input def commonPharoArgs
@@ -217,13 +205,31 @@ class EvalSmalltalkExpressionTask extends DefaultTask {
 
     @TaskAction
     def evalSmalltalkExpression() {
+        def pharoArgs = []
+        pharoArgs.addAll(commonPharoArgs)
+        pharoArgs.addAll([image, "eval", "--save", expression])
+        println "${pharoPath} ${commonPharoArgs} ${image} eval --save ${expression}"
         project.exec {
-            commandLine "bash", "-c", "${pharoPath} ${image} eval --save \"${expression}\""
+            executable "${pharoPath}"
+            args pharoArgs
         }
     }
 }
 
-class RunSmalltalkScriptTask extends DefaultTask {
+class EvalGtExpressionTask extends DefaultTask {
+    @Input String gtImage = "GlamorousToolkit.image"
+    @Input String gtPath = "bin/GlamorousToolkit-cli"
+    @Input String expression
+
+    @TaskAction
+    def evalSmalltalkExpression() {
+        project.exec {
+            commandLine "bash", "-c", "${gtPath} ${gtImage} eval --save \"${expression}\""
+        }
+    }
+}
+
+class RunPharoScriptTask extends DefaultTask {
     @Input String image = "Pharo.image"
     @Input String pharoPath = "pharo"
     @Input def commonPharoArgs
@@ -238,6 +244,19 @@ class RunSmalltalkScriptTask extends DefaultTask {
            executable "${pharoPath}"
            args pharoArgs
        }
+    }
+}
+
+class RunGtScriptTask extends DefaultTask {
+    @Input String gtImage = "GlamorousToolkit.image"
+    @Input String gtPath = "bin/GlamorousToolkit-cli"
+    @Input String script
+
+    @TaskAction
+    def runSmalltalkScript() {
+        project.exec {
+            commandLine "bash", "-c", "${gtPath} ${gtImage} st --quit --save \"${script}\""
+        }
     }
 }
 
