@@ -34,9 +34,9 @@ def version
 def imageName
 
 task setVersion() {
-        // tag, branchOrTag and versionSuffix are defined in gradle.properties
-        version = "${branchOrTag}${versionSuffix}" // do not forget to update the version also in docker.gradle
-        imageName = "${project.name}-${version}"
+    // tag, branchOrTag and versionSuffix are defined in gradle.properties
+    version = "${branchOrTag}${versionSuffix}" // do not forget to update the version also in docker.gradle
+    imageName = "${project.name}-${version}"
 }
 
 
@@ -45,8 +45,7 @@ task retrieveLatestGtoolkitVersion(type: RetrieveLatestGtoolkitVersionTask) {
         // tag, branchOrTag and versionSuffix are defined in gradle.properties
         ext.gtoolkitVersion = tasks.retrieveLatestGtoolkitVersion.retrieveGtVersion()
         version = "${branchOrTag}${versionSuffix}" // do not forget to update the version also in docker.gradle
-        imageName = "${project.name}-${version}"
-        println "gtoolkit: -${gtoolkitVersion}-"
+        imageName = "${project.name}-gt${gtoolkitVersion}-${version}"
     }
 }
 
@@ -66,12 +65,12 @@ task retrieveFreshGtoolkitImage(type: RetrieveFreshGtoolkitImageTask, dependsOn:
 task loadPharoEDAPeers(type: EvalPharoExpressionTask, dependsOn: downloadFreshPharoImage) {
     pharoPath = customPharoPath
     commonPharoArgs = customPharoArgs
-    expression = "EpMonitor current disable. NonInteractiveTranscript stdout install. [ Metacello new repository: 'github://rydnr/pharo-eda-peers:${branchOrTag}/src'; baseline: 'PharoEDAPeers'; onConflictUseLoaded; load ] ensure: [ EpMonitor current enable ]"
+    expression = "EpMonitor current disable. NonInteractiveTranscript stdout install. [ Metacello new repository: 'github://rydnr/${project.name}:${branchOrTag}/src'; baseline: '${baseline}'; onConflictUseLoaded; load ] ensure: [ EpMonitor current enable ]"
 }
 
 task loadPharoEDAPeersGt(type: EvalGtExpressionTask, dependsOn: retrieveFreshGtoolkitImage) {
     gtPath = customGtPath
-    expression = "EpMonitor current disable. NonInteractiveTranscript stdout install. [ Metacello new baseline: 'PharoEDAPeers'; repository: 'github://rydnr/pharo-eda-peers:${branchOrTag}/src'; onConflictUseLoaded; load ] ensure: [ EpMonitor current enable. GtTranscript installDefault ]"
+    expression = "EpMonitor current disable. NonInteractiveTranscript stdout install. [ Metacello new baseline: '${baseline}'; repository: 'github://rydnr/${project.name}:${branchOrTag}/src'; onConflictUseLoaded; load ] ensure: [ EpMonitor current enable. GtTranscript installDefault ]"
 }
 
 task customizeImage(type: RunPharoScriptTask, dependsOn: loadPharoEDAPeers) {
