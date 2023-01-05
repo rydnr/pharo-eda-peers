@@ -1,7 +1,26 @@
+buildscript {
+    ext.gtoolkitVersion = 'unknown'
+    repositories {
+        mavenCentral()
+    }
+
+    dependencies {
+        classpath group: 'org.jsoup', name: 'jsoup', version: '1.11.2'
+    }
+}
+
+plugins {
+    id "io.github.http-builder-ng.http-plugin" version "0.1.1"
+}
+
 apply plugin: PharoPlugin
 
 pharo {
     imageVersion = '100'
+}
+
+ext {
+    gtoolkitVersion = 'unknown'
 }
 
 def Properties properties = new Properties()
@@ -11,17 +30,35 @@ def customPharoUiPath = properties.getProperty('pharoUiPath')
 def customPharoArgs = properties.getProperty('pharoArgs').split(",").toList()
 def gtoolkitHome = properties.getProperty('gtoolkitHome')
 def customGtPath = properties.getProperty('gtoolkitPath')
-// tag, branchOrTag, versionSuffix and gtoolkitVersion are defined in gradle.properties
-def version = "${branchOrTag}${versionSuffix}" // do not forget to update the version also in docker.gradle
-def imageName = "${project.name}-${version}"
+def version
+def imageName
+
+task setVersion() {
+        // tag, branchOrTag and versionSuffix are defined in gradle.properties
+        version = "${branchOrTag}${versionSuffix}" // do not forget to update the version also in docker.gradle
+        imageName = "${project.name}-${version}"
+}
+
+
+task retrieveLatestGtoolkitVersion(type: RetrieveLatestGtoolkitVersionTask) {
+    doLast {
+        // tag, branchOrTag and versionSuffix are defined in gradle.properties
+        ext.gtoolkitVersion = tasks.retrieveLatestGtoolkitVersion.retrieveGtVersion()
+        version = "${branchOrTag}${versionSuffix}" // do not forget to update the version also in docker.gradle
+        imageName = "${project.name}-${version}"
+        println "gtoolkit: -${gtoolkitVersion}-"
+    }
+}
+
+task setGtVersion(dependsOn: retrieveLatestGtoolkitVersion)
 
 task removePreviousPharoImage(type: RemovePreviousPharoImageTask)
 
 task removePreviousGtoolkitImage(type: RemovePreviousGtoolkitImageTask)
 
-task downloadFreshPharoImage(type: DownloadPharoImageTask, dependsOn: removePreviousPharoImage)
+task downloadFreshPharoImage(type: DownloadPharoImageTask, dependsOn: [ setVersion, removePreviousPharoImage ])
 
-task retrieveFreshGtoolkitImage(type: RetrieveFreshGtoolkitImageTask, dependsOn: removePreviousGtoolkitImage) {
+task retrieveFreshGtoolkitImage(type: RetrieveFreshGtoolkitImageTask, dependsOn: [ setGtVersion, removePreviousGtoolkitImage ]) {
     gtHome = gtoolkitHome
     gtVersion = gtoolkitVersion
 }
@@ -132,6 +169,38 @@ class RetrieveFreshGtoolkitImageTask extends DefaultTask {
         project.exec {
             commandLine "bash", "-c", "chmod +x bin/*"
         }
+    }
+}
+
+class RetrieveLatestGtoolkitVersionTask extends DefaultTask {
+
+    @Internal String version
+
+    String retrieveGtVersion() {
+        println "Retrieving version: ${version}"
+        version
+    }
+
+    @TaskAction
+    def retrieveLatestVersion() {
+
+        org.jsoup.nodes.Document page = groovyx.net.http.HttpBuilder.configure {
+            request.uri = 'https://dl.feenk.com/gt/' // https://mvnrepository.com/artifact/org.codehaus.groovy/groovy-all
+        }.get()
+
+        String result =
+            page.select('a[href*=GlamorousToolkit-Linux-x86_64-v]').select(':not(a[href*=release])').collect {
+                def match = (it.text() =~ /GlamorousToolkit-Linux-x86_64-v(.+)\.zip/)
+                if (match.find()) {
+                    return match.group(1)
+                } else {
+                    return it.text()
+                }
+
+            }.last()
+
+        println "Setting version to ${result}"
+        this.version = result
     }
 }
 
